@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "luna",
+	"version": "${version}",
+	"name": "Luna",
+	"description": "A mod that adds Lua 5 execution capabilities to Minecraft.",
+	"authors": [
+		"0xVB"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/luna/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"mc.luna.Luna"
+		],
+		"client": [
+			"mc.luna.LunaClient"
+		],
+		"fabric-datagen": [
+			"mc.luna.LunaDataGenerator"
+		]
+	},
+	"mixins": [
+		"luna.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.7",
+		"minecraft": "~1.21.3",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
