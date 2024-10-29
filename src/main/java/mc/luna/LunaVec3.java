@@ -2,6 +2,7 @@ package mc.luna;
 
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtDouble;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.luaj.vm2.*;
 import org.luaj.vm2.lib.OneArgFunction;
@@ -12,6 +13,14 @@ public class LunaVec3 extends LuaUserdata {
     private static final LuaTable metatable = new LuaTable();
     private static final LuaTable methods = new LuaTable();
 
+    public static BlockPos toBlockPos(Vec3d vec)
+    {
+        int x = (int)vec.x, y = (int)vec.y, z = (int)vec.z;
+        if (vec.x < 0) x--;
+        if (vec.y < 0) y--;
+        if (vec.z < 0) z--;
+        return new BlockPos(x, y, z);
+    }
     // Static method initializer block
     static {
         // GetUnit(Vector3: self): Vector3 | Returns a Vector3 value with a magnitude of 1.
@@ -96,21 +105,53 @@ public class LunaVec3 extends LuaUserdata {
         });
 
         // Rotate(Vector3: self, Vector3: Radians): Vector3 | Rotates the given vector across the given amounts in radians.
+// Rotate(Vector3: self, Vector3: Rotation): Vector3 | Rotates the vector across the given angles in radians for each axis.
         methods.set("Rotate", new TwoArgFunction() {
             @Override
-            public LuaValue call(LuaValue luaSelf, LuaValue radians) {
-                if (!radians.isnumber()) {
-                    return LuaValue.error("Rotate requires a number (in radians).");
+            public LuaValue call(LuaValue luaSelf, LuaValue rotation) {
+                if (!(rotation instanceof LunaVec3)) {
+                    return LuaValue.error("Rotate requires a Vector3 for rotation.");
                 }
-                double angle = radians.todouble();
                 Vec3d self = (Vec3d) ((LunaVec3) luaSelf).userdata();
-                double cos = Math.cos(angle);
-                double sin = Math.sin(angle);
-                return new LunaVec3(
-                        self.x * cos - self.y * sin,
-                        self.x * sin + self.y * cos,
-                        self.z // Assuming rotation is around the z-axis
-                );
+                Vec3d rotationVec = (Vec3d) ((LunaVec3) rotation).userdata();
+
+                // Rotate around X-axis
+                double cosX = Math.cos(rotationVec.x);
+                double sinX = Math.sin(rotationVec.x);
+                double y1 = self.y * cosX - self.z * sinX;
+                double z1 = self.y * sinX + self.z * cosX;
+
+                // Rotate around Y-axis
+                double cosY = Math.cos(rotationVec.y);
+                double sinY = Math.sin(rotationVec.y);
+                double x2 = self.x * cosY + z1 * sinY;
+                double z2 = z1 * cosY - self.x * sinY;
+
+                // Rotate around Z-axis
+                double cosZ = Math.cos(rotationVec.z);
+                double sinZ = Math.sin(rotationVec.z);
+                double x3 = x2 * cosZ - y1 * sinZ;
+                double y3 = x2 * sinZ + y1 * cosZ;
+
+                return new LunaVec3(x3, y3, z2);
+            }
+        });
+
+        // GetYaw(Vector3: self): number | Returns the Yaw value of this vector.
+        methods.set("GetYaw", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue luaSelf) {
+                Vec3d self = (Vec3d) ((LunaVec3) luaSelf).userdata();
+                return LuaValue.valueOf(Math.atan2(self.z, self.x)); // Yaw is typically calculated from the XZ plane
+            }
+        });
+
+        // GetPitch(Vector3: self): number | Returns the Pitch value of this vector.
+        methods.set("GetPitch", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue luaSelf) {
+                Vec3d self = (Vec3d) ((LunaVec3) luaSelf).userdata();
+                return LuaValue.valueOf(Math.atan2(self.y, Math.sqrt(self.x * self.x + self.z * self.z))); // Pitch is calculated from the Y axis
             }
         });
 
@@ -286,6 +327,11 @@ public class LunaVec3 extends LuaUserdata {
         );
     }
 
+    public static Vec3d fromLua(LuaValue lval)
+    {
+        if (lval.isuserdata(Vec3d.class)) return (Vec3d) ((LuaUserdata)lval).userdata();
+        return new Vec3d(0, 0, 0);
+    }
 
     // Registers Vec3 in the global state
     public static void gAssign(Globals gState)

@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class LunaExecutor
 {
-    public Map<Entity, LunaEntity> RegisteredEntities = new HashMap<>();
+    public Map<Object, LunaEntity> RegisteredEntities = new HashMap<>();
     public final Globals gState;
     public LunaEntity self = null;
     public CommandContext<ServerCommandSource> cmdContext;
@@ -45,6 +45,7 @@ public class LunaExecutor
 
             LunaVec3.gAssign(gState);
             LunaLogger.gAssign(gState);
+            LunaEntity.gAssign(gState, isClient);
         }
         catch (Exception e)
         { return LuaValue.valueOf("Error: [ENV_SETUP] " + e.getMessage()); }
